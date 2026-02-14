@@ -117,14 +117,13 @@ for shape in slide_pa.shapes:
                     [("\u2022  Median: ", True), ("60.00 minutes per day", False)],
                     [("\u2022  Mode: ", True), ("60 minutes per day", False)],
                     "",
-                    [("Skewness Analysis", True)],
+                    [("Distribution Shape (Mean vs. Median)", True)],
                     "",
-                    "The mean (59.17) is slightly less than the median (60.00), which",
-                    "suggests the distribution is left-skewed (negatively skewed).",
-                    "",
-                    "This indicates there is a slight tail toward lower physical activity",
-                    "values. However, the difference is small, so the distribution is",
-                    "nearly symmetric overall.",
+                    "The mean (59.17) is very close to the median (60.00), indicating",
+                    "the distribution is approximately symmetric. The mean is slightly",
+                    "less than the median, which can suggest a minor left tail, but the",
+                    "difference is negligible\u2014the distribution of physical activity",
+                    "levels is effectively symmetric.",
                 ]
                 clear_and_set_text(shape.text_frame, content, font_size=14)
                 break
@@ -167,14 +166,14 @@ for shape in slide_hr.shapes:
         for para in shape.text_frame.paragraphs:
             if '[TODO]' in para.text:
                 content = [
-                    [("Distribution Shape: ", True), ("Right-skewed (positive skew)", False)],
+                    [("Measures of Center: ", True), ("Mean = 70.17, Median = 70.00, Mode = 68 bpm", False)],
                     "",
-                    "Most heart rates cluster between 65\u201375 bpm, with a tail",
-                    "extending toward higher values (up to 86 bpm).",
+                    [("Distribution Shape (Mean vs. Median): ", True), ("Right-skewed (positive skew)", False)],
+                    "The mean (70.17) is greater than the median (70.00), confirming a",
+                    "right-skewed distribution with a tail toward higher heart rates.",
                     "",
                     [("Outliers (IQR Method): ", True), ("15 outliers detected", False)],
                     "Heart rates above 78 bpm are outliers: 80, 81, 82, 83, 84, 85, 86 bpm.",
-                    "",
                     "(Q1 = 68, Q3 = 72, IQR = 4, Upper fence = Q3 + 1.5 \u00d7 IQR = 78 bpm)",
                 ]
                 clear_and_set_text(shape.text_frame, content, font_size=13)

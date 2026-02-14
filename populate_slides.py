@@ -11,10 +11,57 @@ import copy
 prs = Presentation('template.pptx')
 
 # ============================================================
+# Strip blue circle bullets from ALL slide layouts at source
+# ============================================================
+from pptx.oxml.ns import qn
+
+for layout in prs.slide_layouts:
+    for shape in layout.placeholders:
+        if shape.has_text_frame:
+            # Find lstStyle in the text body
+            txBody = shape._element.find(qn('p:txBody'))
+            if txBody is None:
+                continue
+            lstStyle = txBody.find(qn('a:lstStyle'))
+            if lstStyle is None:
+                continue
+            # For each level, remove bullet chars/colors and add buNone
+            for lvl in lstStyle:
+                for child in list(lvl):
+                    tag = child.tag
+                    if any(x in tag for x in ['buChar', 'buClr', 'buSzPts', 'buSzPct', 'buFont', 'buAutoNum']):
+                        lvl.remove(child)
+                # Add buNone and reset indent/margin
+                lvl.append(lvl.makeelement(qn('a:buNone'), {}))
+                lvl.set('indent', '0')
+                lvl.set('marL', '0')
+
+# Also strip from slide masters
+for master in prs.slide_masters:
+    for shape in master.placeholders:
+        if shape.has_text_frame:
+            txBody = shape._element.find(qn('p:txBody'))
+            if txBody is None:
+                continue
+            lstStyle = txBody.find(qn('a:lstStyle'))
+            if lstStyle is None:
+                continue
+            for lvl in lstStyle:
+                for child in list(lvl):
+                    tag = child.tag
+                    if any(x in tag for x in ['buChar', 'buClr', 'buSzPts', 'buSzPct', 'buFont', 'buAutoNum']):
+                        lvl.remove(child)
+                lvl.append(lvl.makeelement(qn('a:buNone'), {}))
+                lvl.set('indent', '0')
+                lvl.set('marL', '0')
+
+# ============================================================
 # Helper: set paragraph text with formatting
 # ============================================================
 def clear_and_set_text(text_frame, lines, font_size=14, bold_first=False):
     """Clear text frame and add lines with formatting."""
+    from pptx.oxml.ns import qn
+
     # Clear existing paragraphs
     for i in range(len(text_frame.paragraphs) - 1, 0, -1):
         p = text_frame.paragraphs[i]._p
@@ -30,6 +77,17 @@ def clear_and_set_text(text_frame, lines, font_size=14, bold_first=False):
             para = first_para
         else:
             para = text_frame.add_paragraph()
+
+        # Remove template bullet formatting (blue circles from layout)
+        pPr = para._p.get_or_add_pPr()
+        # Reset indent and margin to prevent bullet space
+        pPr.set('indent', '0')
+        pPr.set('marL', '0')
+        # Remove any existing bullet-related elements
+        for child in list(pPr):
+            if any(x in child.tag for x in ['buChar', 'buAutoNum', 'buFont', 'buSzPts', 'buSzPct', 'buClr', 'buNone']):
+                pPr.remove(child)
+        pPr.append(pPr.makeelement(qn('a:buNone'), {}))
 
         # Handle bold segments with (text, bold) tuples
         if isinstance(line, list):
@@ -65,7 +123,7 @@ for shape in slide1.shapes:
                 if '[Subtitle]' in run.text:
                     run.text = run.text.replace('[Subtitle]', 'Descriptive Statistics and Data Exploration')
                 if '[Your Name]' in run.text:
-                    run.text = run.text.replace('[Your Name]', 'Tyrone Wilcoxson')
+                    run.text = run.text.replace('[Your Name]', 'Tim Wilcoxson')
 
 # ============================================================
 # Slide 2: Delete "How to Use This Template" slide
@@ -166,23 +224,30 @@ for shape in slide_hr.shapes:
         for para in shape.text_frame.paragraphs:
             if '[TODO]' in para.text:
                 content = [
-                    [("Measures of Center: ", True), ("Mean = 70.17, Median = 70.00, Mode = 68 bpm", False)],
+                    [("Measures of Center: ", True), ("Mean = 70.17,", False)],
+                    "Median = 70.00, Mode = 68 bpm",
                     "",
-                    [("Distribution Shape (Mean vs. Median): ", True), ("Right-skewed (positive skew)", False)],
-                    "The mean (70.17) is greater than the median (70.00), confirming a",
-                    "right-skewed distribution with a tail toward higher heart rates.",
+                    [("Distribution Shape: ", True), ("Right-skewed", False)],
+                    "Mean (70.17) > Median (70.00)",
+                    "confirms a right-skewed distribution.",
                     "",
-                    [("Outliers (IQR Method): ", True), ("15 outliers detected", False)],
-                    "Heart rates above 78 bpm are outliers: 80, 81, 82, 83, 84, 85, 86 bpm.",
-                    "(Q1 = 68, Q3 = 72, IQR = 4, Upper fence = Q3 + 1.5 \u00d7 IQR = 78 bpm)",
+                    [("Outliers: ", True), ("15 detected (IQR method)", False)],
+                    "Values above 78 bpm are outliers:",
+                    "80, 81, 82, 83, 84, 85, 86 bpm",
+                    "",
+                    "Q1=68, Q3=72, IQR=4",
+                    "Upper fence = Q3+1.5\u00d7IQR = 78",
                 ]
-                clear_and_set_text(shape.text_frame, content, font_size=13)
+                clear_and_set_text(shape.text_frame, content, font_size=12)
+                # Resize text box to left half only
+                shape.left = Inches(0.5)
+                shape.width = Inches(4.5)
                 break
 
-# Insert the heart rate histogram image
+# Insert the heart rate histogram image - right side, no overlap
 slide_hr.shapes.add_picture(
     'heart_rate_distribution.png',
-    Inches(4.8), Inches(2.2), Inches(4.8), Inches(4.0)
+    Inches(5.2), Inches(2.0), Inches(5.0), Inches(4.2)
 )
 
 # ============================================================
